@@ -1,6 +1,8 @@
 package de.nicolas.levels;
 
 import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.math.MathUtils;
+import de.nicolas.actors.Ball;
 import de.nicolas.actors.Brick;
 import de.nicolas.actors.Paddle;
 import de.nicolas.actors.Wall;
@@ -12,6 +14,8 @@ public class LevelScreen extends BaseScreen {
     private Paddle paddle;
 
     private BaseActor background;
+
+    private Ball ball;
 
     @Override
     public void initialize() {
@@ -41,6 +45,8 @@ public class LevelScreen extends BaseScreen {
                 new Brick(x, y, mainStage);
             }
         }
+
+        ball = new Ball(0, 0, mainStage);
     }
 
     @Override
@@ -49,5 +55,38 @@ public class LevelScreen extends BaseScreen {
         float mouseX = Gdx.input.getX();
         paddle.setX(mouseX - paddle.getWidth() / 2);
         paddle.boundToWorld();
+
+        if(ball.isPaused()){
+            ball.setX(paddle.getX() + paddle.getWidth() / 2 - ball.getWidth() / 2);
+            ball.setY(paddle.getY() + paddle.getHeight() / 2 + ball.getHeight() / 2);
+        }
+
+        for (BaseActor wall : BaseActor.getList(mainStage, "de.nicolas.actors.Wall")){
+            if (ball.overlaps(wall)){
+                ball.bounceOff(wall);
+            }
+        }
+
+        for (BaseActor brick : BaseActor.getList(mainStage, "de.nicolas.actors.Brick")){
+            if (ball.overlaps(brick)){
+                ball.bounceOff(brick);
+                brick.remove();
+            }
+        }
+
+        if (ball.overlaps(paddle)){
+            float ballCenterX = ball.getX() + ball.getWidth() / 2;
+            float paddlePercentHit = (ballCenterX - paddle.getX()) / paddle.getWidth();
+            float bounceAngle = MathUtils.lerp(150, 30, paddlePercentHit);
+            ball.setMotionAngle(bounceAngle);
+        }
+    }
+
+    @Override
+    public boolean touchDown(int screenX, int screenY, int pointer, int button) {
+        if(ball.isPaused()){
+            ball.setPaused(false);
+        }
+        return false;
     }
 }
